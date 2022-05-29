@@ -130,6 +130,19 @@ class Experiment(ORMDataclass, Generic[R], ABC):
     def run(self) -> R:
         """Runs the experiment, producing a Result."""
 
+def run_experiment(experiment: Experiment, errors: str = 'raise') -> Optional[JSONDict]:
+    try:
+        result = experiment.run()
+        return {'time' : datetime.now().isoformat(), **experiment.to_dict(), **result.to_dict()}
+    except Exception as e:
+        if isinstance(e, (KeyboardInterrupt, bdb.BdbQuit)):
+            raise e
+        if (errors == 'raise'):
+            raise e
+        if (errors == 'warn'):
+            experiment.logger.error(f'{e.__class__.__name__}: {e}')
+            return None
+
 @dataclass
 class ExperimentRunner:
     experiment_cls: Type[Experiment]
@@ -169,7 +182,8 @@ class ExperimentRunner:
         logger.info(f'Running {num_experiments} experiments with {self.num_threads} thread(s)...')
         pool = mp.Pool(self.num_threads)
         mapper = map if (self.num_threads == 1) else partial(pool.imap_unordered, chunksize = self.chunk_size)
-        results = mapper(self.run_experiment, experiments)
+        func = partial(run_experiment, errors = self.errors)
+        results = mapper(func, experiments)
         for result in tqdm(results, total = num_experiments):
             if (result is not None):
                 time = result.pop('time')
