@@ -6,6 +6,8 @@ authors = ["Jeremy Silver <jeremys@nessiness.com>"]
 
 [tool.poetry.dependencies]
 python = "^3.9"
+sqlalchemy = "*"
+toml = "*"
 
 [tool.poetry.dev-dependencies]
 
