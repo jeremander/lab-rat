@@ -1,4 +1,5 @@
 from abc import ABC, abstractclassmethod, abstractmethod
+import bdb
 import colorlog
 from dataclasses import dataclass, make_dataclass
 from datetime import datetime
@@ -150,6 +151,8 @@ class ExperimentRunner:
             result = experiment.run()
             return {'time' : datetime.now().isoformat(), **experiment.to_dict(), **result.to_dict()}
         except Exception as e:
+            if isinstance(e, (KeyboardInterrupt, bdb.BdbQuit)):
+                raise e
             if (self.errors == 'raise'):
                 raise e
             if (self.errors == 'warn'):
