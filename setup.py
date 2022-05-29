@@ -8,7 +8,7 @@ package_data = \
 {'': ['*']}
 
 install_requires = \
-['sqlalchemy', 'toml']
+['colorlog', 'sqlalchemy', 'toml']
 
 setup_kwargs = {
     'name': 'labrat',
