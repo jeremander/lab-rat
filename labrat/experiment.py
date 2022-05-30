@@ -1,82 +1,26 @@
 from abc import ABC, abstractclassmethod, abstractmethod
 import bdb
-from dataclasses import dataclass, make_dataclass
+from dataclasses import dataclass, fields, make_dataclass
 from datetime import datetime
 from functools import cache, partial
-import itertools
 from logging import Logger
 import multiprocessing as mp
-from sqlalchemy import Boolean, Column, Integer, Numeric, String, Table
+from sqlalchemy import Column, Integer, String
 from sqlalchemy.future.engine import Engine
-from sqlalchemy.orm import registry, sessionmaker
+from sqlalchemy.orm import sessionmaker
 from tqdm import tqdm
-from typing import Dict, Generic, Iterator, Optional, Type, TypeVar
+from typing import Generic, Iterator, Optional, Type, TypeVar
 
 from labrat import get_logger, JSONDict
+from labrat.orm import ColumnMap, mapper_registry, ORMDataclass, orm_table
 from labrat.params import Params
 
 
 T = TypeVar('T')
 
-mapper_registry = registry()
+ID_COLUMN = Column('id', Integer, primary_key = True, autoincrement = True)
+TIME_COLUMN = Column('time', String)
 
-def get_column_type(tp: type) -> type:
-    """Given a Python type, returns a corresponding sqlalchemy column type."""
-    if issubclass(tp, str):
-        return String
-    elif issubclass(tp, bool):
-        return Boolean
-    elif issubclass(tp, int):
-        return Integer
-    elif issubclass(tp, float):
-        return Numeric
-    raise TypeError(f'could not convert type {tp!r} to SQL column type')
-
-class ORMDataclass:
-    @classmethod
-    def get_columns(cls) -> Dict[str, Column]:
-        cols = {}
-        for (key, field) in cls.__dataclass_fields__.items():  # type: ignore
-            tp = field.type
-            if hasattr(tp, '__origin__'):
-                tp = tp.__args__[0]  # get the first type of a Union (or Optional)
-            if issubclass(tp, ORMDataclass):  # nested ORMDataclass
-                cols.update(tp.get_columns())
-            else:
-                cols[key] = Column(key, get_column_type(tp))
-        return cols
-    def to_dict(self) -> JSONDict:
-        d = {}
-        for key in self.__dataclass_fields__:
-            val = getattr(self, key)
-            if isinstance(val, ORMDataclass):
-                val = val.to_dict()
-            d[key] = val
-        return d
-    @classmethod
-    def from_dict(cls: Type[T], d: JSONDict) -> T:
-        args = []
-        for (key, field) in cls.__dataclass_fields__.items():
-            val = d.get(key)
-            tp = field.type
-            if hasattr(tp, '__origin__'):
-                tp = tp.__args__[0]
-            if issubclass(tp, ORMDataclass):
-                val = tp.from_dict(val)
-            args.append(val)
-        return cls(*args)
-
-def orm_table(cls: Type[ORMDataclass]) -> Type[ORMDataclass]:
-    fields = {
-        'id' : Column('id', Integer, primary_key = True, autoincrement = True),
-        'time' : Column('time', String),
-    }
-    for (key, col) in cls.get_columns().items():
-        if (key in fields):
-            raise ValueError(f'duplicate field name {key!r}')
-        fields[key] = col
-    cls.__table__ = Table(cls.__name__.lower(), mapper_registry.metadata, *fields.values())
-    return cls
 
 class Result(ORMDataclass):
     """A class of experimental result that can be mapped to a SQL table."""
@@ -92,19 +36,23 @@ class Experiment(ORMDataclass, Generic[R], ABC):
     def result_cls(cls) -> Type[R]:
         """Gets the Result subclass."""
     @classmethod
+    def extra_orm_columns(cls) -> ColumnMap:
+        """Gets additional columns to provide to the ORM table which are not included among the dataclass fields."""
+        return {'id' : ID_COLUMN, 'time' : TIME_COLUMN}
+    @classmethod
     @cache
-    def experiment_with_result_cls(cls) -> type:
+    def orm_cls(cls) -> Type[ORMDataclass]:
         """Creates a custom subclass of ORMDataclass that has a sqlalchemy-backed SQL table."""
-        fields = {}
+        flds = {}
         for cl in [cls, cls.result_cls()]:  # type: ignore
-            for (key, field) in cl.__dataclass_fields__.items():
-                if (key in fields):
-                    raise ValueError(f'duplicate field name {key!r}')
-                fields[key] = field.type
-        dcl = make_dataclass('ExperimentWithResult', list(fields.items()), bases = (ORMDataclass,))
+            for field in fields(cl):
+                if (field.name in flds):
+                    raise ValueError(f'duplicate field name {field.name!r}')
+                flds[field.name] = field.type
+        dcl = make_dataclass('ExperimentWithResult', list(flds.items()), bases = (ORMDataclass,))
         dcl.__name__ = cls.__name__
-        dcl = orm_table(dcl)
-        return mapper_registry.mapped(dcl)
+        cols = cls.extra_orm_columns()
+        return orm_table(cols)(dcl)
     @abstractmethod
     def run(self) -> R:
         """Runs the experiment, producing a Result."""
@@ -137,7 +85,7 @@ class ExperimentRunner:
     def __iter__(self) -> Iterator[Experiment]:
         yield from (self.experiment_cls.from_dict(d) for d in self.params)
     def run(self) -> None:
-        cls = self.experiment_cls.experiment_with_result_cls()
+        cls = self.experiment_cls.orm_cls()
         mapper_registry.metadata.create_all(self.engine)
         Session = sessionmaker(bind = self.engine)
         session = Session()
