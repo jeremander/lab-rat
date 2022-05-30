@@ -1,6 +1,7 @@
 from abc import ABC, abstractclassmethod, abstractmethod
 import bdb
-from dataclasses import dataclass, fields, make_dataclass
+from copy import copy
+from dataclasses import dataclass, make_dataclass, MISSING
 from datetime import datetime
 from functools import cache, partial
 from logging import Logger
@@ -43,13 +44,16 @@ class Experiment(ORMDataclass, Generic[R], ABC):
     @cache
     def orm_cls(cls) -> Type[ORMDataclass]:
         """Creates a custom subclass of ORMDataclass that has a sqlalchemy-backed SQL table."""
-        flds = {}
-        for cl in [cls, cls.result_cls()]:  # type: ignore
-            for field in fields(cl):
-                if (field.name in flds):
-                    raise ValueError(f'duplicate field name {field.name!r}')
-                flds[field.name] = field.type
-        dcl = make_dataclass('ExperimentWithResult', list(flds.items()), bases = (ORMDataclass,))
+        flds = []
+        for cl in [cls, cls.result_cls()]:
+            for field in cl.get_fields():
+                has_default = (field.default is not MISSING) or (field.default_factory is not MISSING)
+                # to preserve order, put a dummy default of None for any mandatory fields
+                if (not has_default):
+                    field = copy(field)
+                    field.default = None
+                flds.append((field.name, field.type, field))
+        dcl = make_dataclass('ExperimentWithResult', flds, bases = (ORMDataclass,))
         dcl.__name__ = cls.__name__
         cols = cls.extra_orm_columns()
         return orm_table(cols)(dcl)
