@@ -30,6 +30,6 @@ class MyExperiment(Experiment[MyResult]):
 if __name__ == '__main__':
 
     engine = create_engine('sqlite:///test.sqlite')
-    params = Params({'a' : list(range(100)), 'b' : ['a', 'b', 'c'], 'c': [1.0, 10.0]})
+    params = Params({'a' : list(range(20)), 'b' : ['a', 'b', 'c'], 'c': [1.0, 10.0]})
     runner = ExperimentRunner(MyExperiment, engine, params, num_threads = 1)
     runner.run()
