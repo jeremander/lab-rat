@@ -20,6 +20,7 @@ from labrat.params import Params
 T = TypeVar('T')
 
 ID_COLUMN = Column('id', Integer, primary_key = True, autoincrement = True)
+EXP_ID_COLUMN = Column('exp_id', String)
 TIME_COLUMN = Column('time', String)
 
 
@@ -39,7 +40,7 @@ class Experiment(SQLDataclass, Generic[R], ABC):
     @classmethod
     def extra_columns(cls) -> ColumnMap:
         """Gets additional columns to provide to the SQL table which are not included among the dataclass fields."""
-        return {'id' : ID_COLUMN, 'time' : TIME_COLUMN}
+        return {'id' : ID_COLUMN, 'exp_id' : EXP_ID_COLUMN, 'time' : TIME_COLUMN}
     @classmethod
     @cache
     def sql_cls(cls) -> Type[SQLDataclass]:
@@ -103,10 +104,12 @@ class ExperimentRunner:
         mapper = map if (self.num_threads == 1) else partial(pool.imap_unordered, chunksize = self.chunk_size)
         func = partial(run_experiment, errors = self.errors)
         results = mapper(func, experiments)  # type: ignore
+        exp_id = datetime.now().strftime('%Y%m%d%H%M%S')
         for result in tqdm(results, total = num_experiments):
             if (result is not None):
                 time = result.pop('time')
                 res = cls.from_dict(result)
+                res.exp_id = exp_id
                 res.time = time
                 session.add(res)
                 session.commit()

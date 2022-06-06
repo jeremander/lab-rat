@@ -49,7 +49,7 @@ class Params(Iterable[JSONDict]):
     """Class representing a collection of experimental parameters, each one given by a JSON dict.
     This stores a list of ParamGrid objects; this represents the union of Cartesian products of parameters."""
     grids: List[ParamGrid]
-    def __init__(self, grids: Union['Params', ParamGrid, List[ParamGrid], JSONDict, List[JSONDict]]) -> None:
+    def __init__(self, grids: Union['Params', ParamGrid, List[ParamGrid], JSONDict, List[JSONDict]] = []) -> None:
         if isinstance(grids, Params):
             self.grids = grids.grids
         else:
@@ -59,6 +59,12 @@ class Params(Iterable[JSONDict]):
     def __iter__(self) -> Iterator[JSONDict]:
         return itertools.chain.from_iterable(iter(grid) for grid in self.grids)
     def __mul__(self, other: 'Params') -> 'Params':
+        """Returns the Cartesian product of two Params."""
+        if isinstance(other, ParamGrid):
+            return self * Params([other])
         return self.__class__([grid1 * grid2 for (grid1, grid2) in itertools.product(self.grids, other.grids)])
     def __add__(self, other: 'Params') -> 'Params':
+        """Returns the union of two Params."""
+        if isinstance(other, ParamGrid):
+            return self + Params([other])
         return self.__class__(self.grids + other.grids)

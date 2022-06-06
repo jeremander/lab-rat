@@ -1,9 +1,9 @@
 from abc import ABC, abstractmethod, abstractproperty
 from dataclasses import dataclass
+from fancy_dataclass import SQLDataclass
 from typing import Generic, Iterator, TypeVar
 
 from labrat.experiment import Experiment, Result
-from labrat.orm import ORMDataclass
 
 S = TypeVar('S')  # state
 I = TypeVar('I')  # input
@@ -11,8 +11,8 @@ R = TypeVar('R', bound = Result)  # result
 T = TypeVar('T')
 
 
-@dataclass
-class StateMachine(ABC, ORMDataclass, Generic[S, I]):
+@dataclass  # type: ignore
+class StateMachine(ABC, SQLDataclass, Generic[S, I]):
     """Abstract class representing a state machine."""
     @abstractproperty
     def start_state(self) -> S:
@@ -26,7 +26,6 @@ class StateMachine(ABC, ORMDataclass, Generic[S, I]):
 
 @dataclass  # type: ignore
 class StateMachineExperiment(Experiment[R], Generic[S, I, R]):
-    nested_dict = False  # do not nest the dict representation
     state_machine: StateMachine[S, I]
     @abstractmethod
     def generate_inputs(self) -> Iterator[I]:
