@@ -34,3 +34,6 @@ def get_logger(name: str) -> Logger:
     logger.addHandler(handler)
     logger.setLevel(logging.INFO)
     return logger
+
+# global logger
+LOGGER = get_logger('labrat')

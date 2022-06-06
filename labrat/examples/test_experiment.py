@@ -13,7 +13,7 @@ class MyResult(Result):
     e: bool
 
 @dataclass
-class MyExperiment(Experiment[MyResult]):
+class Experiment1(Experiment[MyResult]):
     a: int
     b: str
     c: float
@@ -26,10 +26,25 @@ class MyExperiment(Experiment[MyResult]):
             raise ValueError('13 is unlucky!')
         return MyResult(self.a, self.b == 'b')
 
+@dataclass
+class Experiment2(Experiment[MyResult]):
+    x: str
+    y: int
+    @classmethod
+    def result_cls(cls) -> Type[MyResult]:
+        return MyResult
+    def run(self) -> MyResult:
+        time.sleep(0.1)
+        return MyResult(self.y, self.x == 'abc')
+
+
 
 if __name__ == '__main__':
 
     engine = create_engine('sqlite:///test.sqlite')
-    params = Params({'a' : list(range(20)), 'b' : ['a', 'b', 'c'], 'c': [1.0, 10.0]})
-    runner = ExperimentRunner(MyExperiment, engine, params, num_threads = 1)
+    params1 = Params({'a' : list(range(20)), 'b' : ['a', 'b', 'c'], 'c': [1.0, 10.0]})
+    params2 = Params({'x' : ['abc', 'def'], 'y' : [1, 2]})
+    params = {Experiment1 : params1, Experiment2 : params2}
+
+    runner = ExperimentRunner(params, engine, num_threads = 1)
     runner.run()

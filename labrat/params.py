@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from functools import reduce
 import operator
 import itertools
-from typing import Any, Dict, Iterable, Iterator, List, Sequence, Union
+from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Union
 
 from labrat import JSONDict
 
@@ -49,8 +49,10 @@ class Params(Iterable[JSONDict]):
     """Class representing a collection of experimental parameters, each one given by a JSON dict.
     This stores a list of ParamGrid objects; this represents the union of Cartesian products of parameters."""
     grids: List[ParamGrid]
-    def __init__(self, grids: Union['Params', ParamGrid, List[ParamGrid], JSONDict, List[JSONDict]] = []) -> None:
-        if isinstance(grids, Params):
+    def __init__(self, grids: Optional[Union['Params', ParamGrid, List[ParamGrid], JSONDict, List[JSONDict]]] = None) -> None:
+        if (grids is None):
+            self.grids = []
+        elif isinstance(grids, Params):
             self.grids = grids.grids
         else:
             grid_list = grids if isinstance(grids, list) else [grids]
