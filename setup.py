@@ -2,13 +2,13 @@
 from setuptools import setup
 
 packages = \
-['labrat']
+['labrat', 'labrat.examples', 'labrat.tests']
 
 package_data = \
 {'': ['*']}
 
 install_requires = \
-['colorlog', 'sqlalchemy', 'toml']
+['colorlog', 'fancy_dataclass>=0.1', 'sqlalchemy', 'toml']
 
 setup_kwargs = {
     'name': 'labrat',
