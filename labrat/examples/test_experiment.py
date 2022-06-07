@@ -1,7 +1,6 @@
 from dataclasses import dataclass
 from sqlalchemy import create_engine
 import time
-from typing import Type
 
 from labrat.experiment import Experiment, ExperimentRunner, Result
 from labrat.params import Params
@@ -30,7 +29,6 @@ class Experiment2(Experiment[MyResult]):
     def run(self) -> MyResult:
         time.sleep(0.1)
         return MyResult(self.y, self.x == 'abc')
-
 
 
 if __name__ == '__main__':

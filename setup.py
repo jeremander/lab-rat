@@ -2,7 +2,7 @@
 from setuptools import setup
 
 packages = \
-['labrat', 'labrat.examples', 'labrat.tests']
+['labrat', 'labrat.examples']
 
 package_data = \
 {'': ['*']}
@@ -12,7 +12,7 @@ install_requires = \
 
 setup_kwargs = {
     'name': 'labrat',
-    'version': '0.1.0',
+    'version': '0.1.1',
     'description': 'A framework for running experiments in parallel.',
     'long_description': None,
     'author': 'Jeremy Silver',
