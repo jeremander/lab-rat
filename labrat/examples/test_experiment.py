@@ -17,9 +17,6 @@ class Experiment1(Experiment[MyResult]):
     a: int
     b: str
     c: float
-    @classmethod
-    def result_cls(cls) -> Type[MyResult]:
-        return MyResult
     def run(self) -> MyResult:
         time.sleep(0.1)
         if (self.a == 33):
@@ -30,9 +27,6 @@ class Experiment1(Experiment[MyResult]):
 class Experiment2(Experiment[MyResult]):
     x: str
     y: int
-    @classmethod
-    def result_cls(cls) -> Type[MyResult]:
-        return MyResult
     def run(self) -> MyResult:
         time.sleep(0.1)
         return MyResult(self.y, self.x == 'abc')
@@ -46,5 +40,5 @@ if __name__ == '__main__':
     params2 = Params({'x' : ['abc', 'def'], 'y' : [1, 2]})
     params = {Experiment1 : params1, Experiment2 : params2}
 
-    runner = ExperimentRunner(params, engine, num_threads = 1)
+    runner = ExperimentRunner(params, engine, num_threads = 4)
     runner.run()
