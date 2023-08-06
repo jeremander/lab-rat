@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 from functools import reduce
-import operator
 import itertools
+import operator
 from typing import Any, Dict, Iterable, Iterator, List, Optional, Sequence, Union
 
 from labrat import JSONDict

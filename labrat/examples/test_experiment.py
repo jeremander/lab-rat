@@ -18,7 +18,7 @@ class Experiment1(Experiment[MyResult]):
     c: float
     def run(self) -> MyResult:
         time.sleep(0.1)
-        if (self.a == 33):
+        if (self.a == 13):
             raise ValueError('13 is unlucky!')
         return MyResult(self.a, self.b == 'b')
 
